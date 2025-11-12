@@ -3,6 +3,7 @@
 #include <string>
 #include <ctime>
 #include <random>
+#include <limits>
 
 using std::string;
 using std::endl;
@@ -10,16 +11,53 @@ using std::cin;
 
 void mainMenu(string& account){
     int main_menu;
+    string ingame_name;
+
+    //UID Generator
     std::random_device random;
     std::mt19937 gen(random());
     std::uniform_int_distribution<> dis(1000000, 9999999);
     int uid = dis(gen);
 
-    std::cout << "\n1. Play\n2. Wish\n3. Check Inventory\n4. Shop\n6. Profile\n7. Settings" << endl;
+    //In-game name (asked once when entering the menu)
+    std::cout << "====== Welcome to Wish Emulator ======" << endl;
+    std::cout << "\nWelcome to Wish Emulator! What do you want to be called? ";
+    cin >> ingame_name;
+    system("cls");
 
-    if (main_menu == 7){
-        std::cout << "Username: " << account << endl;
-        std::cout << "UID: 84" <<  uid << endl;
+    // Loop the menu so user can go to sections and come back
+    while (true) {
+        std::cout << "1. Play\n2. Wish\n3. Check Inventory\n4. Shop\n6. Profile\n7. Settings\n8. Logout/Exit" << endl;
+        std::cout << "\nEnter choice (1-8): ";
+        cin >> main_menu;
+
+        system("cls");
+
+        switch (main_menu){
+        case 6: {
+            std::cout << "====== Profile Section ======" << endl;
+            std::cout << "\nHello, " << ingame_name << "!" << endl;
+            std::cout << "\n---------------------" << endl;
+            std::cout << "\nUsername: " << account << endl;
+            std::cout << "UID: 84" << uid << endl;
+            std::cout << "\nPress ESC to return to the main menu...";
+            // Wait for ESC (ASCII 27) using _getch()
+            int key;
+            do { key = _getch(); } while (key != 27);
+            system("cls");
+            break;
+        }
+        case 8:
+            // Logout/exit menu and return to caller
+            return;
+        default:
+            std::cout << "Option not implemented yet." << endl;
+            std::cout << "\nPress ESC to continue...";
+            int key2;
+            do { key2 = _getch(); } while (key2 != 27);
+            system("cls");
+            break;
+        }
     }
 }
 int main() { 
@@ -27,8 +65,7 @@ int main() {
     string account; 
     int choice;
 
-    std::cout << "====== Welcome to Wish Emulator ======" << endl;
-    std::cout << "\nPlease register to continue       " << endl;
+    std::cout << "Please register to continue..." << endl;
     std::cout << "\n1. Register an account" << endl;
     std::cout << "2. Exit" << endl;
 
@@ -106,7 +143,8 @@ int main() {
 
             }
         } while (password != confirm_Pass);
-        std::cout << "\nAccount registered successfully!" << endl;
+
+        mainMenu(account);
 
         
     }
@@ -118,5 +156,8 @@ int main() {
         std::cout << "Invalid choice" << endl;
         return 1;
     }
+    std::cout << "\nPress Enter to exit...";
+    cin.ignore();  // Clear the input buffer
+    cin.get();     // Wait for user to press Enter
     return 0;
 }
