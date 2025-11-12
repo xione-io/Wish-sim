@@ -4,6 +4,8 @@
 #include <ctime>
 #include <random>
 #include <limits>
+#include <algorithm>
+#include <vector>
 
 using std::string;
 using std::endl;
@@ -11,13 +13,18 @@ using std::cin;
 
 void mainMenu(string& account){
     int main_menu;
+    int gems = 0; //Primo gems starts at 0
     string ingame_name;
 
     //UID Generator
     std::random_device random;
     std::mt19937 gen(random());
-    std::uniform_int_distribution<> dis(1000000, 9999999);
-    int uid = dis(gen);
+    std::uniform_int_distribution<> dis_uid(1000000, 9999999);
+    int uid = dis_uid(gen);
+
+    //random 3 shots of robot
+    std::random_device shoot;
+    std::mt19937 lol(shoot());
 
     //In-game name (asked once when entering the menu)
     std::cout << "====== Welcome to Wish Emulator ======" << endl;
@@ -34,6 +41,98 @@ void mainMenu(string& account){
         system("cls");
 
         switch (main_menu){
+        case 1: {
+            int play_menu;
+            std::cout << "======= Play Section =======" << endl;
+            std::cout << "\"In order to aquire primo gems, you must complete the challenges\"" << endl;
+            std::cout << "\n\n1. Minesweeper\n2. Math quiz\n3. Dodge this!\n4. Back" << endl;
+            std::cout << "\nEnter choice (1-4): ";
+            cin >> play_menu;
+            system("cls");
+            
+            //play menu
+            switch (play_menu){
+            case 3: {
+                char choice;
+                do {
+                    std::cout << "\n====== DODGE THIS! ======" << endl;
+                    std::cout << "\nThe robot will strike at 3 random positions (1-5) each wave.";
+                    std::cout << "\nObjective: Must survive each wave to obtain 10 primo gems!\n\n";
+
+                    int wave = 1;
+                    bool alive = true;
+
+                    while (alive) {
+                        // Generate 3 unique random enemy positions (1–5)
+                        std::vector<int> enemies = {1, 2, 3, 4, 5};
+                        shuffle(enemies.begin(), enemies.end(), lol);  // randomize order
+
+                        // Take only the first 3 numbers as enemy attacks
+                        std::vector<int> attackPos = {enemies[0], enemies[1], enemies[2]};
+
+                        std::cout << "\n      ====== Wave " << wave << "======"<< endl;
+
+                        //Robot design
+                        int n = 5;
+                        for (int i = 1; i <= n; i++) {
+                            for (int num = 1; num <= (n - n) + 1; num++) {
+                                std::cout << "[" << i << "]";
+                            }
+                            for (int space = 1; space <= n * 4; space++) {
+                                std::cout << " ";
+                            }
+                            for (int j = 1; j <= n; j++) {
+                                std::cout << "* ";
+                            }
+                            std::cout << endl;
+                        }
+
+                        //Position input of player
+                        int guess;
+                        std::cout << "\nPick a position to dodge (1-5): ";
+                        cin >> guess;
+
+                        // Check if guess does not matches any of the 3 attack positions
+                        bool hit = false;
+                        for (int pos : attackPos) {
+                            if (guess == pos) {
+                                hit = true;
+                                break;
+                            }
+                        }
+
+                        if (hit) {
+                            std::cout << "\nGame Over! ";
+                            std::cout << "Enemy attacks were at: ";
+                            for (int pos : attackPos)
+                                std::cout << pos << " ";
+                            std::cout << "\n";
+                            alive = false;
+
+                        } else {
+                            std::cout << "\nMoving on to the next wave...";
+                            wave++;
+                            system("cls");
+                        }
+                    }
+
+                    std::cout << "-----------------------\n";
+                    std::cout << "Game Over at Wave " << wave << "!\n";
+                    std::cout << "Play again? (Y/N): ";
+                    cin >> choice;
+                    choice = toupper(choice);
+
+                } while (choice == 'Y');
+
+                break;
+            }
+                        
+            default: 
+                break;
+            }
+
+                break;
+        }
         case 6: {
             std::cout << "====== Profile Section ======" << endl;
             std::cout << "\nHello, " << ingame_name << "!" << endl;
