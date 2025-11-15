@@ -12,6 +12,66 @@ using std::string;
 using std::endl;
 using std::cin;
 
+void shopItems(std::vector<bool>& owned, std::vector<int>& price, int& gems) {
+
+    std::vector<string> gamepass = {
+        "VIP - 500 gems",
+        "2x Multiplier - 300 gems",
+        "50% Luck Boost - 200 gems",
+        "Bag capacity +25 - 150 gems",
+        "Bag capacity +50 - 250 gems",
+        "Companion equip slot +2 - 400 gems"
+    };
+
+    int shop_choice, item_choice;
+
+    std::cout << "====== Shop ======\n";
+    std::cout << "1. Exchange tickets\n2. Gamepass\n";
+    std::cout << "\nEnter choice: ";
+    cin >> shop_choice;
+
+    if (shop_choice == 2) {
+        std::cout << "\n=== Gamepass Shop ===\n";
+
+        for (int i = 0; i < gamepass.size(); i++){
+            std::cout << i + 1 << ". " << gamepass[i];
+
+            if (owned[i] == true)
+                std::cout << " (OWNED)";
+
+            std::cout << "\n";
+        }
+
+        std::cout << "\nSelect item (1-6): ";
+        cin >> item_choice;
+
+        if (item_choice < 1 || item_choice > 6) {
+            std::cout << "Invalid choice.\n";
+            std::cout << "\nPress ESC to continue...";
+            while (_getch() != 27);
+            system("cls");
+        }
+        else {
+            int index = item_choice - 1; //index identifier
+
+            if (owned[index]) {
+                std::cout << "You already own this item!\n";
+            } else if (gems < price[index]) {
+                std::cout << "You do not have enough gems to purchase this item.\n";
+            } else {
+                owned[index] = true;
+                std::cout << "Successfully purchased: " << gamepass[index] << "\n";
+                gems -= price[index];
+                std::cout << "Remaining Primo Gems: " << gems << "\n";
+            }
+        }
+    }
+
+    std::cout << "\nPress ESC to continue...";
+    while (_getch() != 27);
+    system("cls");
+}
+
 void mainMenu(string& account) {
     // Main variables
     int main_menu;
@@ -19,6 +79,10 @@ void mainMenu(string& account) {
     string ingame_name;
     string new_name;
     int settings_menu = 0;
+
+    //shop checker if items are owned or not
+    std::vector<bool> owned(6, false);
+    std::vector<int> price = {500, 300, 200, 150, 250, 400};
 
     // UID Generator
     std::random_device random;
@@ -32,6 +96,7 @@ void mainMenu(string& account) {
 
     // Inventory
     int inventory = 25; // Starting inventory space
+    int current_inventory = 0;
 
     // Start Game
     std::cout << "====== Wish Emulator ======" << endl;
@@ -46,7 +111,7 @@ void mainMenu(string& account) {
         system("cls");
 
         switch (main_menu) {
-        case 1: {
+        case 1: { //play option
             int play_menu;
             std::cout << "======= Play Section =======" << endl;
             std::cout << "\"In order to acquire primo gems, you must complete the challenges\"" << endl;
@@ -59,10 +124,14 @@ void mainMenu(string& account) {
             switch (play_menu) {
             case 3: {
                 char choice;
+                int wave = 0;
+                int earnedGems = 0;
+                bool alive;
+
                 do {
-                    int wave = 1;
-                    int earnedGems = 0;
-                    bool alive = true;
+                    wave = 1;
+                    earnedGems = 0;
+                    alive = true;
 
                     std::cout << "\n====== DODGE THIS! ======\n";
                     std::cout << "Avoid enemy attacks from the shooter and survive each wave to earn primo gems!\n";
@@ -148,22 +217,25 @@ void mainMenu(string& account) {
             break;
         }
 
-        case 2:
+        case 2: //wish option
             std::cout << "Primo gems: " << gems << endl;
             std::cout << "\nPress ESC to continue...";
             while (_getch() != 27);
             system("cls");
             break;
 
-        case 3:
-        case 4:
-            std::cout << "Option not implemented yet." << endl;
+        case 3: //check inventory option
+            std::cout << "====== Inventory Section ======" << endl;
+            std::cout << "Inventory space: " << current_inventory << " / " << inventory << endl;
             std::cout << "\nPress ESC to continue...";
             while (_getch() != 27);
             system("cls");
             break;
-
-        case 5:
+        case 4: //shop option
+            shopItems(owned, price, gems);
+            break;
+        
+        case 5: //profile option
             std::cout << "====== Profile Section ======" << endl;
             std::cout << "\nHello, " << ingame_name << "!" << endl;
             std::cout << "\n---------------------" << endl;
@@ -174,7 +246,7 @@ void mainMenu(string& account) {
             system("cls");
             break;
 
-        case 6:
+        case 6: //settings option
             std::cout << "====== Settings Section ======" << endl;
             std::cout << "\n1. Change name\n2. Delete account" << endl;
             std::cout << "\nEnter choice (1-2): ";
@@ -193,7 +265,8 @@ void mainMenu(string& account) {
             system("cls");
             break;
 
-        case 7:
+        case 7: //exit option
+            std::cout << "Logging out..." << endl;
             return;
 
         default:
