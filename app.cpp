@@ -258,11 +258,11 @@ Companion wishCompanion(std::mt19937& t1, int& pull_3star, int& pull_4star, int&
     int roll = dist(t1);
 
     //pity system
-    if (pull_6star >= 7500) {
+    if (pull_6star >= 7499) {
         return companions[21 + rand() % 2]; //6 Star
-    } else if (pull_5star >= 900) {
+    } else if (pull_5star >= 899) {
         return companions[16 + rand() % 5]; //5 Star
-    } else if (pull_4star >= 10) {
+    } else if (pull_4star >= 9) {
         return companions[8 + rand() % 8]; //4 Star
     } else if (pull_3star >= 1) {
         return companions[0 + rand() % 8]; //3 Star
@@ -335,7 +335,7 @@ void companionList() {
 void mainMenu(string& account) {
     // Main variables
     int main_menu;
-    int gems = 1600; // Primo gems starts at 0
+    int gems = 99999; // Primo gems starts at 0
     string ingame_name;
     string new_name;
     int settings_menu = 0;
