@@ -237,9 +237,7 @@ struct Companion { //it's holding properties for a data/s, without typing it aga
     bool owned_companion;
 };
 
-Companion wishCompanion(std::mt19937& t1,
-                        int& pity3, int& pity4, int& pity5, int& pity6)
-{
+Companion wishCompanion(std::mt19937& t1, int& pity3, int& pity4, int& pity5, int& pity6) {
     std::vector<Companion> companions = {
         // 3 Star
         {"Macky", "3 Star", false}, {"Brian", "3 Star", false},
@@ -1079,6 +1077,9 @@ void mainMenu(string& account) {
                     choice = toupper(choice);
                 } while (choice == 'Y');
                 
+            }
+            else if (choice == 2) {
+
             }
             
             else if (choice == 3) {
