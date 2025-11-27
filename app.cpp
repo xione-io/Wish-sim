@@ -405,6 +405,7 @@ void mainMenu(string& account) {
     // Inventory
     int inventory = 99999; // Starting inventory space
     int current_inventory = 0;
+    std::vector<Companion> inventory_list;
     std::vector<bool> Companions_owned(23, false); // Placeholder for owned companions
 
     // Start Game
@@ -1067,6 +1068,7 @@ void mainMenu(string& account) {
                         if (current_inventory < inventory) {
                             current_inventory++;
                             pulled.owned_companion = true;
+                            inventory_list.push_back(pulled);   
                             std::cout << "Added to inventory. Current inventory: " << current_inventory << " / " << inventory << "\n";
                         } else {
                             std::cout << "Inventory full! Cannot add " << pulled.name << " to inventory.\n";
@@ -1089,11 +1091,16 @@ void mainMenu(string& account) {
         case 3: //check inventory option
             std::cout << "====== Inventory Section ======" << endl;
             std::cout << "Inventory space: " << current_inventory << " / " << inventory << endl;
-            for (int i = 0; i <= inventory; i++) {
-                Companion owned = wishCompanion(t1, pull_3star, pull_4star, pull_5star, pull_6star); //dummy call to get companion data
-                std::cout << i + 1 << ". " << owned.name << " [" << owned.star << "]" << endl;
+
+            if (inventory_list.empty()) {
+                std::cout << "Your inventory is empty.\n";
+            } else {
+                for (size_t i = 0; i < inventory_list.size(); ++i) {
+                    const Companion& comp = inventory_list[i];
+                    std::cout << (i + 1) << ". " << comp.name << " [" << comp.star << "]" << endl;
+                }
             }
-            
+
             escKey();
             break;
         case 4: //shop option
