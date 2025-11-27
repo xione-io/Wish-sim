@@ -217,65 +217,100 @@ void resetBoard() {
     }
 }
 
+// MATH mini game time limit functions
+void restoreEnergy(int &energy, time_t &lastRestore) {
+    time_t now = time(0);
+    int secondsPassed = now - lastRestore;
+
+    while (secondsPassed >= 180 && energy < 5) {
+        energy++;
+        lastRestore += 180;
+        secondsPassed -= 180;
+        
+        std::cout << "\n+1 Energy Restored!" << std::endl;
+    }
+}
+
 struct Companion { //it's holding properties for a data/s, without typing it again and again
     string name;
     string star;
     bool owned_companion;
 };
 
-Companion wishCompanion(std::mt19937& t1, int& pull_3star, int& pull_4star, int& pull_5star, int& pull_6star) {
+Companion wishCompanion(std::mt19937& t1,
+                        int& pity3, int& pity4, int& pity5, int& pity6)
+{
     std::vector<Companion> companions = {
-        //3 Star Companions
-        {"Macky", "3 Star", false},
-        {"Brian", "3 Star", false},
-        {"Lemuel", "3 Star", false},
-        {"Jiehan", "3 Star", false},
-        {"Gus", "3 Star", false},
-        {"Roland", "3 Star", false},
-        {"Nathan", "3 Star", false},
-        {"Arbe", "3 Star", false},
-        
-        //4 Star Companions
-        {"Kirk", "4 Star", false},
-        {"Dae Ho", "4 Star", false},
-        {"Fern", "4 Star", false},
-        {"Jett", "4 Star", false},
-        {"Frieren", "4 Star", false},
-        {"Gojo", "4 Star", false},
-        {"Karina", "4 Star", false},
-        {"Speed", "4 Star", false},
-    
-        //5 Star Companions
-        {"Jinx", "5 Star", false},
-        {"Justine", "5 Star", false},
-        {"Christine", "5 Star", false},
-        {"Diosylle", "5 Star", false},
+        // 3 Star
+        {"Macky", "3 Star", false}, {"Brian", "3 Star", false},
+        {"Lemuel", "3 Star", false}, {"Jiehan", "3 Star", false},
+        {"Gus", "3 Star", false}, {"Roland", "3 Star", false},
+        {"Nathan", "3 Star", false}, {"Arbe", "3 Star", false},
+
+        // 4 Star
+        {"Kirk", "4 Star", false}, {"Dae Ho", "4 Star", false},
+        {"Fern", "4 Star", false}, {"Jett", "4 Star", false},
+        {"Frieren", "4 Star", false}, {"Gojo", "4 Star", false},
+        {"Karina", "4 Star", false}, {"Speed", "4 Star", false},
+
+        // 5 Star
+        {"Jinx", "5 Star", false}, {"Justine", "5 Star", false},
+        {"Christine", "5 Star", false}, {"Diosylle", "5 Star", false},
         {"Alpha", "5 Star", false},
-        
-        //6 Star Companions
-        {"Ma'am Karen", "6 Star", false},
-        {"Ma'am Rofa", "6 Star", false}
+
+        // 6 Star
+        {"Ma'am Karen", "6 Star", false}, {"Ma'am Rofa", "6 Star", false}
     };
 
-    std::uniform_int_distribution<int> dist(1, 10000); //the precision of the roll, the higher the number, the more precise the roll
+    std::uniform_int_distribution<int> dist(1, 10000);
     int roll = dist(t1);
 
-    //pity system
-    if (pull_6star >= 7499) {
-        return companions[21 + rand() % 2]; //6 Star
-    } else if (pull_5star >= 899) {
-        return companions[16 + rand() % 5]; //5 Star
-    } else if (pull_4star >= 9) {
-        return companions[8 + rand() % 8]; //4 Star
-    } else if (pull_3star >= 1) {
-        return companions[0 + rand() % 8]; //3 Star
-    }
+    //RANGE:
+    //3 star (1-8869) (88.69%)
+    //4 star (8870-9869) (10%)
+    //5 star (9870-9980) (1.11%)
+    //6 star (9981-10000)(0.2%)
+    
+    //force/max/guarantee pity in each rarity
+    if (pity6 >= 900) //500 * 2 - 10%
+        roll = 9981;   //6★
 
-    // chances of companions
-    if (roll <= 8939) return companions[0 + rand() % 8];         // 3 Star
-    else if (roll <= 8999) return companions[8 + rand() % 8];    // 4 Star
-    else if (roll <= 9399) return companions[16 + rand() % 5];   // 5 Star
-    else return companions[21 + rand() % 2];                     // 6 Star
+    else if (pity5 >= 162) //90 * 2 - 10%
+        roll = 9870;    //5★
+
+    else if (pity4 >= 18) //10 * 2 - 10%
+        roll = 8870;    //4★
+
+    // Determine rarity
+    std::string rarity;
+    if (roll <= 8869) rarity = "3 Star";
+    else if (roll <= 9869) rarity = "4 Star";
+    else if (roll <= 9980) rarity = "5 Star";
+    else rarity = "6 Star";
+
+    // +1 chance each pull [(1/10) > (2/10)]
+    pity3++;
+    pity4++;
+    pity5++;
+    pity6++;
+
+    // Reset pity only for the rarity obtained
+    if (rarity == "3 Star") pity3 = 0;
+    if (rarity == "4 Star") pity4 = 0;
+    if (rarity == "5 Star") pity5 = 0;
+    if (rarity == "6 Star") pity6 = 0;
+
+    // give random companion based on rarity
+    if (rarity == "3 Star")
+        return companions[0 + rand() % 8];
+
+    if (rarity == "4 Star")
+        return companions[8 + rand() % 8];
+
+    if (rarity == "5 Star")
+        return companions[16 + rand() % 5];
+
+    return companions[21 + rand() % 2]; // 6 Star
 }
 
 void companionList() {
@@ -445,13 +480,411 @@ void mainMenu(string& account) {
                     escKey();
                     break;
                 }
-
+                
+                //MATHHHHHH mini game
                 case 2: {
-                    // Math quiz implementation can go here
-                    std::cout << "Math quiz is under development. Returning to Play Menu...\n";
-                    escKey();
+                    srand(time(0));
+    
+                    int dif;
+                    int energy = 5; 
+                    bool quit = false;
+                    time_t lastRestore = time (0);
+
+                    std::cout << "\n==================================";
+                    std::cout << "\n   WELCOME TO MATH QUIZ!!! (≧∇≦)  ";
+                    std::cout << "\n==================================";
+                    std::cout << "\n\nINSTRUCTION:" << endl;
+                    std::cout << "-Enter the correct number and gain primogems" << endl;
+                    std::cout << "-You have only 5 energies so answer carefully" << endl;
+                    std::cout << "-Energy will decrease whether you win or lose" << endl;
+                    std::cout << "-Every 3 minutes, 1 energy will restore" << endl;
+                    std::cout << "\nPlease select a difficulty to start:" << endl;
+                    std::cout << "1. Easy" << endl;
+                    std::cout << "2. Medium" << endl;
+                    std::cout << "3. Hard" << endl;
+
+                    do {
+
+                        restoreEnergy (energy, lastRestore);
+                        std::cout << "\nCurrent Energy: " << energy;
+
+                        if (energy <= 0) {
+                            std::cout << "\nYou Have 0 Energy left, Please try again later!" << endl;
+                            break;
+                        } else {
+
+        
+                        std::cout << "\nEnter Difficulty: ";
+                        std::cin >> dif;
+                        if (std::cin.fail()) {
+                            std::cin.clear();
+                            std::cin.ignore();
+                            continue;
+                        }
+
+                        system ("cls");
+
+                        switch (dif) {
+                        
+                            //EASY MODE
+                        
+                            case 1: {
+
+                            int shape = rand() % 3;
+                            double a, b, r, ans, uans;
+                            char choice;
+                            
+                            std::cout << "========================";
+                            std::cout << "\n       EASY MODE";
+                            std::cout << "\n========================";
+
+                            //RECTANGLE
+
+                            if (shape == 0) {
+
+                                a = rand() % 100 + 1;
+                                b = rand() % 100 + 1;
+                                ans = a * b;
+                                
+                                std::cout << "\n[EASY] Find the Area of a Rectangle!" << endl;
+                                std::cout << "Length: " << a << endl;
+                                std::cout << "Width: " << b << endl;
+                                std::cout << "\nYour Answer: ";
+                                std::cin >> uans;
+
+                                if (std::cin.fail()) {
+                                    std::cin.clear();
+                                    std::cin.ignore(99999, '\n');
+                                    uans = -99999999;
+                                }
+
+                                energy--;
+
+                                if (uans == ans) {
+                                    std::cout << "\nCorrect! You've Gained 10 Primogems" << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                    gems+= 10;
+                                    //PRIMOGEMS + 10
+                                } else {
+                                    std::cout << "\nIncorrect! The correct answer is " << ans << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                }
+                                std::cout << "\nContinue? (Y/n): ";
+                                std::cin >> choice;
+
+                                if (choice == 'Y' || choice == 'y') {
+                                    system ("cls");
+
+                                } else {
+                                    std::cout << "Thank You for Playing!";
+                                    quit = true;
+                                    escKey();
+                                    break;
+                                }
+                                break;
+                            }
+
+                            //TRIANGLE
+                            
+                            else if (shape == 1) {
+                                a = rand() % 100 + 1;
+                                b = rand() % 100 + 1;
+                                ans = 0.5 * a * b;
+
+                                std::cout << "\n[EASY] Find the Area of a Triangle!" << endl;
+                                std::cout << "Base: " << a << endl;
+                                std::cout << "Height: " << b << endl;
+                                std::cout << "\nYour Answer: ";
+                                std::cin >> uans;
+
+                                if (std::cin.fail()) {
+                                    std::cin.clear();
+                                    std::cin.ignore(99999, '\n');
+                                    uans = -99999999;
+                                }
+
+                                energy--;
+
+                                if (uans == ans) {
+                                    std::cout << "\nCorrect! You've Gained 10 Primogems" << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                    gems+= 10;
+                                    //PRIMOGEMS + 10
+                                } else {
+                                    std::cout << "\nIncorrect! The correct answer is " << ans << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                }
+                                std::cout << "\nContinue? (Y/n): ";
+                                std::cin >> choice;
+
+                                if (choice == 'Y' || choice == 'y') {
+                                    system ("cls");
+
+                                } else {
+                                    std::cout << "Thank You for Playing!";
+                                    quit = true;
+                                    escKey();
+                                    break;
+                                }
+                                break;
+                            }
+
+                            //CIRCLE
+
+                            else if (shape == 2) {
+                                r = rand () % 50 + 1;
+                                ans = 3.14 * r * r;
+
+                                std::cout << "\n[EASY] Find the Area of a Circle!" << endl;
+                                std::cout << "Radius: " << r << endl;
+                                std::cout << "Assuming that PI = 3.14"<< endl;
+                                std::cout << "\nYour Answer: ";
+                                std::cin >> uans;
+
+                                if (std::cin.fail()) {
+                                    std::cin.clear();
+                                    std::cin.ignore(99999, '\n');
+                                    uans = -99999999;
+                                }
+
+                                energy--;
+
+                                if (std::fabs(uans - ans) < 0.01) {
+                                    std::cout << "\nCorrect! You've Gained 10 Primogems" << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                    gems+= 10;
+                                    //PRIMOGEMS + 10
+                                } else {
+                                    std::cout << "\nIncorrect! The correct answer is " << ans << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                }
+                                std::cout << "\nContinue? (Y/n): ";
+                                std::cin >> choice;
+
+                                if (choice == 'Y' || choice == 'y') {
+                                    system ("cls");
+
+                                } else {
+                                    std::cout << "Thank You for Playing!";
+                                    quit = true;
+                                    escKey();
+                                    break;
+                                }
+                                break;
+                            }
+                            break;
+                        }
+
+                        //MEDIUM MODE
+
+                        case 2: {
+                            int type = rand() % 2;
+                            int a, b, c, x, y, z, ans, uans;
+                            char choice;
+                            
+                            std::cout << "========================";
+                            std::cout << "\n      MEDIUM MODE";
+                            std::cout << "\n========================";
+
+                            //FINDING THE VALUE OF X
+
+                            if (type == 0) {
+                                a = rand() % 9 + 1;
+                                b = rand() % 20 + 1;
+                                x = rand() % 10 + 1;
+                                c = a * x + b;
+
+                                std::cout << "\n[MEDIUM] Solve for x: " << endl;
+                                std::cout << "\n" << a << "x + " << b << " = " << c << endl;
+                                std::cout << "\nYour answer: ";
+                                std::cin >> uans;
+
+                                if (std::cin.fail()) {
+                                    std::cin.clear();
+                                    std::cin.ignore(99999, '\n');
+                                    uans = -99999999;
+                                }
+
+                                energy--;
+
+                                if (uans == x) {
+                                    std::cout << "\nCorrect! You've Gained 20 Primogems" << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                    gems+= 20;
+                                    //PRIMOGEMS + 20
+                                } else {
+                                    std::cout << "\nIncorrect! The correct answer is " << x << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                }
+                                std::cout << "\nContinue? (Y/n): ";
+                                std::cin >> choice;
+
+                                if (choice == 'Y' || choice == 'y') {
+                                    system ("cls");
+
+                                } else {
+                                    std::cout << "Thank You for Playing!";
+                                    quit = true;
+                                    escKey();
+                                    break;
+                                }
+                                break;
+                            }
+
+                            else if (type == 1) {
+                                x = rand() % 9 + 1;
+                                y = rand() % 9 + 1;
+                                z = rand() % 9 + 1;
+                                ans = x * x + 2 * y - z;
+
+                                std::cout << "\n[MEDIUM] Evaluate the Following: " << endl;
+                                std::cout << "\n" << "x^2 + 2y - z" << endl;
+                                std::cout << "\n" << "If: \nx = " << x << "\ny = " << y << "\nz = " << z << endl;
+                                std::cout << "\nYour answer: ";
+                                std::cin >> uans;
+
+                                if (std::cin.fail()) {
+                                    std::cin.clear();
+                                    std::cin.ignore(99999, '\n');
+                                    uans = -99999999;
+                                }
+
+                                energy--;
+
+                                if (uans == ans) {
+                                    std::cout << "\nCorrect! You've Gained 20 Primogems" << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                    gems+= 20;
+                                    //PRIMOGEMS + 20
+                                } else {
+                                    std::cout << "\nIncorrect! The correct answer is " << ans << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                }
+                                std::cout << "\nContinue? (Y/n): ";
+                                std::cin >> choice;
+
+                                if (choice == 'Y' || choice == 'y') {
+                                    system ("cls");
+
+                                } else {
+                                    std::cout << "Thank You for Playing!";
+                                    quit = true;
+                                    escKey();
+                                    break;
+                                }
+                                break;
+                            }
+                            break;
+                        }
+
+                        //HARD MODE
+                        
+                        case 3: {
+                            int type = rand() % 2;
+                            double uans, ans;
+                            char choice;
+
+                            std::cout << "========================";
+                            std::cout << "\n       HARD MODE";
+                            std::cout << "\n========================";
+
+                            if (type == 0) {
+                                int a = rand() % 20 + 5;
+                                int b = rand() % 20 + 5;
+                                double c = sqrt(a*a + b*b);
+
+                                std::cout << "\n[HARD] Find the Hypotenuse: " << endl;
+                                std::cout << "Leg A = " << a << endl;
+                                std::cout << "Leg B = " << b << endl;
+                                std::cout << "\nYour Answer: ";
+                                std::cin >> uans;
+
+                                if (std::cin.fail()) {
+                                    std::cin.clear();
+                                    std::cin.ignore(99999, '\n');
+                                    uans = -99999999;
+                                }
+
+                                energy--;
+
+                                if (fabs(uans - c) < 0.01) {
+                                    std::cout << "\nCorrect! You've Gained 30 Primogems" << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                    gems+= 30;
+                                    //PRIMOGEMS + 30
+
+                                } else {
+                                    std::cout << "\nIncorrect! The correct answer is " << c << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                }
+                                std::cout << "\nContinue? (Y/n): ";
+                                std::cin >> choice;
+
+                                if (choice == 'Y' || choice == 'y') {
+                                    system ("cls");
+
+                                } else {
+                                    std::cout << "Thank You for Playing!";
+                                    quit = true;
+                                    escKey();
+                                    break;
+                                }
+                                break;
+                            }
+
+                            else if (type == 1) {
+                                int base = rand() % 5 + 2;
+                                int exp = rand() % 4 + 2;
+                                double ans = pow(base, exp);
+
+                                std::cout << "\n[HARD] Solve the Exponent:" << endl;
+                                std::cout << base << "^" << exp << " = ?" << endl;
+                                std::cout << "Your Answer: ";
+                                std::cin >> uans;
+
+                                if (std::cin.fail()) {
+                                    std::cin.clear();
+                                    std::cin.ignore(99999, '\n');
+                                    uans = -99999999;
+                                }
+
+                                energy--;
+
+                                if (uans == ans) {
+                                    std::cout << "\nCorrect! You've Gained 30 Primogems" << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                    gems+= 30;
+                                    //PRIMOGEMS + 30
+                                } else {
+                                    std::cout << "\nIncorrect! The correct answer is " << ans << endl;
+                                    std::cout << "Current Energy: " << energy << endl;
+                                }
+                                std::cout << "\nContinue? (Y/n): ";
+                                std::cin >> choice;
+
+                                if (choice == 'Y' || choice == 'y') {
+                                    system ("cls");
+
+                                } else {
+                                    std::cout << "Thank You for Playing!";
+                                    quit = true;
+                                    escKey();
+                                    break;
+                                    
+                                }
+                                break;
+                            }
+                            break;
+                        }
+                        default: {
+                            std::cout << "\nInvalid Choice!" << endl;
+                                 }
+                            }
+                        }
+                    } while (!quit);
                     break;
                 }
+
 
                 case 3: {
                     char choice;
