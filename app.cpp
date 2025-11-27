@@ -54,7 +54,8 @@ void shopItems(std::vector<bool>& owned, std::vector<int>& price, int& gems, int
         "Companion equip slot +2 - 400 gems"
     };
 
-    int shop_choice, item_choice;
+    int shop_choice = 0; 
+    int item_choice = 0;
 
     std::cout << "====== Shop ======\n";
     std::cout << "1. Exchange tickets\n2. Gamepass\n";
@@ -205,6 +206,7 @@ bool checkWin() {
     return (revealedCount == SIZE*SIZE - MINES);
 }
 
+// Resets if player wants to play again
 void resetBoard() {
     for (int r = 0; r < SIZE; r++) {
         for (int c = 0; c < SIZE; c++) {
@@ -218,40 +220,41 @@ void resetBoard() {
 struct Companion { //it's holding properties for a data/s, without typing it again and again
     string name;
     string star;
+    bool owned_companion;
 };
 
 Companion wishCompanion(std::mt19937& t1, int& pull_3star, int& pull_4star, int& pull_5star, int& pull_6star) {
     std::vector<Companion> companions = {
         //3 Star Companions
-        {"Macky", "3 Star"},
-        {"Brian", "3 Star"},
-        {"Lemuel", "3 Star"},
-        {"Jiehan", "3 Star"},
-        {"Gus", "3 Star"},
-        {"Roland", "3 Star"},
-        {"Nathan", "3 Star"},
-        {"Arbe", "3 Star"},
+        {"Macky", "3 Star", false},
+        {"Brian", "3 Star", false},
+        {"Lemuel", "3 Star", false},
+        {"Jiehan", "3 Star", false},
+        {"Gus", "3 Star", false},
+        {"Roland", "3 Star", false},
+        {"Nathan", "3 Star", false},
+        {"Arbe", "3 Star", false},
         
         //4 Star Companions
-        {"Kirk", "4 Star"},
-        {"Dae Ho", "4 Star"},
-        {"Fern", "4 Star"},
-        {"Jett", "4 Star"},
-        {"Frieren", "4 Star"},
-        {"Gojo", "4 Star"},
-        {"Karina", "4 Star"},
-        {"Speed", "4 Star"},
+        {"Kirk", "4 Star", false},
+        {"Dae Ho", "4 Star", false},
+        {"Fern", "4 Star", false},
+        {"Jett", "4 Star", false},
+        {"Frieren", "4 Star", false},
+        {"Gojo", "4 Star", false},
+        {"Karina", "4 Star", false},
+        {"Speed", "4 Star", false},
     
         //5 Star Companions
-        {"Jinx", "5 Star"},
-        {"Justine", "5 Star"},
-        {"Christine", "5 Star"},
-        {"Diosylle", "5 Star"},
-        {"Alpha", "5 Star"},
+        {"Jinx", "5 Star", false},
+        {"Justine", "5 Star", false},
+        {"Christine", "5 Star", false},
+        {"Diosylle", "5 Star", false},
+        {"Alpha", "5 Star", false},
         
         //6 Star Companions
-        {"Ma'am Karen", "6 Star"},
-        {"Ma'am Rofa", "6 Star"}
+        {"Ma'am Karen", "6 Star", false},
+        {"Ma'am Rofa", "6 Star", false}
     };
 
     std::uniform_int_distribution<int> dist(1, 10000); //the precision of the roll, the higher the number, the more precise the roll
@@ -270,8 +273,8 @@ Companion wishCompanion(std::mt19937& t1, int& pull_3star, int& pull_4star, int&
 
     // chances of companions
     if (roll <= 8939) return companions[0 + rand() % 8];         // 3 Star
-    else if (roll <= 9939) return companions[8 + rand() % 8];    // 4 Star
-    else if (roll <= 9999) return companions[16 + rand() % 5];   // 5 Star
+    else if (roll <= 8999) return companions[8 + rand() % 8];    // 4 Star
+    else if (roll <= 9399) return companions[16 + rand() % 5];   // 5 Star
     else return companions[21 + rand() % 2];                     // 6 Star
 }
 
@@ -344,6 +347,11 @@ void mainMenu(string& account) {
     int tickets = 0;
     std::srand(time(0));
     std::mt19937 t1(time(0));
+    //pity counters
+    int pull_3star = 0;
+    int pull_4star = 0;
+    int pull_5star = 0;
+    int pull_6star = 0;
 
     //shop checker if items are owned or not
     std::vector<bool> owned(6, false);
@@ -360,8 +368,9 @@ void mainMenu(string& account) {
     std::mt19937 lol(shoot());
 
     // Inventory
-    int inventory = 25; // Starting inventory space
+    int inventory = 99999; // Starting inventory space
     int current_inventory = 0;
+    std::vector<bool> Companions_owned(23, false); // Placeholder for owned companions
 
     // Start Game
     std::cout << "====== Wish Emulator ======" << endl;
@@ -554,11 +563,7 @@ void mainMenu(string& account) {
             cin >> choice;
             if (choice == 1){
                 char choice;
-                //pity counters
-                int pull_3star = 0;
-                int pull_4star = 0;
-                int pull_5star = 0;
-                int pull_6star = 0;
+                
                 //number of pulls a player wants to do
                 int num_pulls = 0;
 
@@ -584,7 +589,9 @@ void mainMenu(string& account) {
 
                     //check if user has enough gems/tickets
                     if (tickets >= num_pulls) {
+                        int total_cost = num_pulls * 160; //amount of gems used
                         tickets -= num_pulls;
+                        gems -= total_cost;
                         std::cout << "\nUsing " << num_pulls << " Ticket(s) for your wishes!\n";
                     } else if (tickets < num_pulls) {
                         std::cout << "\nNot enough tickets. Do you want to use Primo Gems for the remaining wishes? (Y/N): ";
@@ -592,6 +599,7 @@ void mainMenu(string& account) {
                         cin >> gem_choice;
                         gem_choice = toupper(gem_choice);
                         if (gem_choice == 'Y') {
+                            std::cout << "\n\n";
                             buyTickets(tickets, gems);
                             std::cout << "\nYou have " << tickets << " Ticket(s) remaining.\n";
                         } else {
@@ -605,7 +613,7 @@ void mainMenu(string& account) {
                         system("cls");
                         continue;
                     }
-                    int total_cost = num_pulls * 160;
+                    //perform the pulls
                     for (int i = 0; i < num_pulls; i++) {
                         Companion pulled = wishCompanion(t1, pull_3star, pull_4star, pull_5star, pull_6star);
                         
@@ -622,6 +630,14 @@ void mainMenu(string& account) {
                         pull_4star++;
                         pull_5star++;
                         pull_6star++;
+
+                        if (current_inventory < inventory) {
+                            current_inventory++;
+                            pulled.owned_companion = true;
+                            std::cout << "Added to inventory. Current inventory: " << current_inventory << " / " << inventory << "\n";
+                        } else {
+                            std::cout << "Inventory full! Cannot add " << pulled.name << " to inventory.\n";
+                        }
                     }
                     std::cout << "\nDo you want to wish again? (Y/N): ";
                     cin >> choice;
@@ -640,6 +656,11 @@ void mainMenu(string& account) {
         case 3: //check inventory option
             std::cout << "====== Inventory Section ======" << endl;
             std::cout << "Inventory space: " << current_inventory << " / " << inventory << endl;
+            for (int i = 0; i <= inventory; i++) {
+                Companion owned = wishCompanion(t1, pull_3star, pull_4star, pull_5star, pull_6star); //dummy call to get companion data
+                std::cout << i + 1 << ". " << owned.name << " [" << owned.star << "]" << endl;
+            }
+            
             escKey();
             break;
         case 4: //shop option
