@@ -425,7 +425,7 @@ void companionList() {
 void mainMenu(string& account) {
     // Main variables
     int main_menu;
-    int gems = 1600; // Primo gems starts at 0
+    int gems = 0; // Primo gems starts at 0
     string ingame_name;
     string new_name;
     int settings_menu = 0;
@@ -458,7 +458,7 @@ void mainMenu(string& account) {
     std::mt19937 lol(shoot());
 
     // Inventory
-    int inventory = 99999;
+    int inventory = 50;
     int current_inventory = 0;
     std::vector<Companion> inventory_list;
     std::vector<bool> Companions_owned(23, false);
