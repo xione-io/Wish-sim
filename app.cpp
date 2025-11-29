@@ -18,7 +18,7 @@ void escKey(){
     system("cls");
 }
 
-void buyTickets(int& tickets, int& gems){
+void buyTickets(int& tickets, int& gems) {
     int ticket_quantity;
     std::cout << "How many tickets do you want to buy? ";
     cin >> ticket_quantity;
@@ -43,15 +43,15 @@ void buyTickets(int& tickets, int& gems){
     std::cout << "Total Tickets: " << tickets << "\n";
 }
 
-void shopItems(std::vector<bool>& owned, std::vector<int>& price, int& gems, int& tickets) {
+void shopItems(std::vector<bool>& owned, std::vector<int>& price, int& gems, int& tickets, double& gemMultiplier, int& inventory, bool& luckBoostActive, int& maxEquipSlots, bool& vipActive) {
 
     std::vector<string> gamepass = {
-        "VIP - 500 gems",
-        "2x Multiplier - 300 gems",
-        "50% Luck Boost - 200 gems",
-        "Bag capacity +25 - 150 gems",
-        "Bag capacity +50 - 250 gems",
-        "Companion equip slot +2 - 400 gems"
+        "VIP",
+        "2x Multiplier",
+        "50% Luck Boost",
+        "Bag capacity +25",
+        "Bag capacity +50",
+        "Companion equip slot +2"
     };
 
     int shop_choice = 0; 
@@ -68,7 +68,14 @@ void shopItems(std::vector<bool>& owned, std::vector<int>& price, int& gems, int
         std::cout << "=== Gamepass Shop ===\n";
 
         for (int i = 0; i < gamepass.size(); i++){
-            std::cout << i + 1 << ". " << gamepass[i];
+
+            int finalPrice = price[i];
+
+            if (vipActive) {
+                finalPrice = int(finalPrice * 0.7);  // 30% OFF
+            }
+
+            std::cout << i + 1 << ". " << gamepass[i] << " (" << finalPrice << " gems)";
 
             if (owned[i] == true)
                 std::cout << " (OWNED)";
@@ -100,13 +107,50 @@ void shopItems(std::vector<bool>& owned, std::vector<int>& price, int& gems, int
 
             if (owned[index]) {
                 std::cout << "You already own this item!\n";
-            } else if (gems < price[index]) {
-                std::cout << "You do not have enough gems to purchase this item.\n";
             } else {
-                owned[index] = true;
-                std::cout << "Successfully purchased: " << gamepass[index] << "\n";
-                gems -= price[index];
-                std::cout << "Remaining Primo Gems: " << gems << "\n";
+
+                int finalPrice = price[index];
+                if (vipActive)
+                    finalPrice = int(finalPrice * 0.7);
+
+                if (gems < finalPrice) {
+                    std::cout << "You do not have enough gems to purchase this item.\n";
+                } else {
+                    owned[index] = true;
+                    std::cout << "Successfully purchased: " << gamepass[index] << "\n";
+                    gems -= finalPrice;
+                    std::cout << "Remaining Primo Gems: " << gems << "\n";
+
+                    // Gamepass effects
+                    if (index == 0) {
+                        vipActive = true;
+                        std::cout << "VIP activated! You now receive 30% discount in Shop and Wish.\n";
+                    }
+                    if (index == 1) { 
+                        gemMultiplier = 2.0;
+                        std::cout << "2x Multiplier Activated! Mini Games Reward are now DOUBLED!\n";
+                    }
+
+                    if (index == 2) {
+                        luckBoostActive = true;
+                        std::cout << "50% Luck Boost activated! Enjoy Wishing!\n";
+                    }
+
+                    if (index == 3) {
+                        inventory += 25;
+                        std::cout << "Bag Capacity Increased by 25!\n";
+                    }
+
+                    if (index == 4) {
+                        inventory += 50;
+                        std::cout << "Bag Capacity Increased by 50!\n";
+                    }
+
+                    if (index == 5) {
+                        maxEquipSlots += 2;
+                        std::cout << "Maximum number of Companions that can be Equiped is now 3!\n";
+                    }
+                }
             }
         }
     } else if (shop_choice == 1) {
@@ -237,7 +281,8 @@ struct Companion { //it's holding properties for a data/s, without typing it aga
     bool owned_companion;
 };
 
-Companion wishCompanion(std::mt19937& t1, int& pity3, int& pity4, int& pity5, int& pity6) {
+Companion wishCompanion(std::mt19937& t1, int& pity3, int& pity4, int& pity5, int& pity6, bool luckBoost)
+{
     std::vector<Companion> companions = {
         // 3 Star
         {"Macky", "3 Star", false}, {"Brian", "3 Star", false},
@@ -260,55 +305,65 @@ Companion wishCompanion(std::mt19937& t1, int& pity3, int& pity4, int& pity5, in
         {"Ma'am Karen", "6 Star", false}, {"Ma'am Rofa", "6 Star", false}
     };
 
+    // BASE RATES (original)
+    int rate3 = 8869;
+    int rate4 = 9869;
+    int rate5 = 9980;
+    int rate6 = 10000;
+
+    // APPLY LUCK BOOST (×2 ONLY TO 5★ AND 6★)
+    if (luckBoost) {
+        // Expand 6★ from 0.20% to 0.40%
+        rate6 = 10000; // unchanged upper bound
+        rate5 = 9980 - (111); // remove original 5★ range
+        rate5 -= 111; // make space
+
+        rate5 += (111 * 2); // double 5★
+        // Rebuild range after 4★
+        rate6 = rate5 + (20 * 2); // double 6★
+    }
+
+    // RANDOM ROLL
     std::uniform_int_distribution<int> dist(1, 10000);
     int roll = dist(t1);
 
-    //RANGE:
-    //3 star (1-8869) (88.69%)
-    //4 star (8870-9869) (10%)
-    //5 star (9870-9980) (1.11%)
-    //6 star (9981-10000)(0.2%)
-    
-    //force/max/guarantee pity in each rarity
-    if (pity6 >= 900) //500 * 2 - 10%
-        roll = 9981;   //6★
+    // ORIGINAL GUARANTEED PITY (DO NOT TOUCH!)
+    if (pity6 >= 900)
+        roll = 9981; // guarantee 6★
+    else if (pity5 >= 162)
+        roll = 9870; // guarantee 5★
+    else if (pity4 >= 18)
+        roll = 8870; // guarantee 4★
 
-    else if (pity5 >= 162) //90 * 2 - 10%
-        roll = 9870;    //5★
-
-    else if (pity4 >= 18) //10 * 2 - 10%
-        roll = 8870;    //4★
-
-    // Determine rarity
+    // DETERMINE RARITY BASED ON UPDATED RANGES
     std::string rarity;
-    if (roll <= 8869) rarity = "3 Star";
-    else if (roll <= 9869) rarity = "4 Star";
-    else if (roll <= 9980) rarity = "5 Star";
-    else rarity = "6 Star";
 
-    // +1 chance each pull [(1/10) > (2/10)]
+    if (roll <= 8869)
+        rarity = "3 Star";
+    else if (roll <= 9869)
+        rarity = "4 Star";
+    else if (roll <= rate5)
+        rarity = "5 Star";
+    else
+        rarity = "6 Star";
+
+    // INCREMENT PITY
     pity3++;
     pity4++;
     pity5++;
     pity6++;
 
-    // Reset pity only for the rarity obtained
+    // RESET PITY FOR OBTAINED RARITY
     if (rarity == "3 Star") pity3 = 0;
     if (rarity == "4 Star") pity4 = 0;
     if (rarity == "5 Star") pity5 = 0;
     if (rarity == "6 Star") pity6 = 0;
 
-    // give random companion based on rarity
-    if (rarity == "3 Star")
-        return companions[0 + rand() % 8];
-
-    if (rarity == "4 Star")
-        return companions[8 + rand() % 8];
-
-    if (rarity == "5 Star")
-        return companions[16 + rand() % 5];
-
-    return companions[21 + rand() % 2]; // 6 Star
+    // RETURN RANDOM COMPANION
+    if (rarity == "3 Star") return companions[0 + rand() % 8];
+    if (rarity == "4 Star") return companions[8 + rand() % 8];
+    if (rarity == "5 Star") return companions[16 + rand() % 5];
+    return companions[21 + rand() % 2];
 }
 
 void companionList() {
@@ -371,7 +426,7 @@ void companionList() {
 void mainMenu(string& account) {
     // Main variables
     int main_menu;
-    int gems = 99999; // Primo gems starts at 0
+    int gems = 1600; // Primo gems starts at 0
     string ingame_name;
     string new_name;
     int settings_menu = 0;
@@ -389,6 +444,9 @@ void mainMenu(string& account) {
     //shop checker if items are owned or not
     std::vector<bool> owned(6, false);
     std::vector<int> price = {500, 300, 200, 150, 250, 400};
+    double gemMultiplier = 1.0;
+    bool luckBoostActive = false;
+    bool vipActive = false;
 
     // UID Generator
     std::random_device random;
@@ -401,10 +459,14 @@ void mainMenu(string& account) {
     std::mt19937 lol(shoot());
 
     // Inventory
-    int inventory = 99999; // Starting inventory space
+    int inventory = 99999;
     int current_inventory = 0;
     std::vector<Companion> inventory_list;
-    std::vector<bool> Companions_owned(23, false); // Placeholder for owned companions
+    std::vector<bool> Companions_owned(23, false);
+
+    int maxEquipSlots = 1;
+    std::vector<Companion> equippedList;
+    double companionMultiplier = 1.0;
 
     // Start Game
     std::cout << "====== Wish Emulator ======" << endl;
@@ -463,8 +525,9 @@ void mainMenu(string& account) {
                                 std::cout << "Congratulations! You cleared the board!\n";
                                 printBoard(true);
 
-                                std::cout << "\nYou earned 30 Primo Gems for clearing Minesweeper!\n";
-                                gems += 30;
+                                int mineSweeperMultiplier = 30 * (gemMultiplier + companionMultiplier);
+                                gems += mineSweeperMultiplier;
+                                std::cout << "\nYou earned " << mineSweeperMultiplier << " Primo Gems for clearing Minesweeper!\n";
                                 std::cout << "Total Primo Gems: " << gems << "\n";
                                 break;
                             }
@@ -560,10 +623,12 @@ void mainMenu(string& account) {
                                 energy--;
 
                                 if (uans == ans) {
-                                    std::cout << "\nCorrect! You've Gained 10 Primogems" << endl;
+
+                                    int easyMathMultiplier = 10 * (gemMultiplier + companionMultiplier);
+                                    gems += easyMathMultiplier;
+                                    std::cout << "\nCorrect! You've Gained " << easyMathMultiplier << " Primogems" << endl;
                                     std::cout << "Current Energy: " << energy << endl;
-                                    gems+= 10;
-                                    //PRIMOGEMS + 10
+
                                 } else {
                                     std::cout << "\nIncorrect! The correct answer is " << ans << endl;
                                     std::cout << "Current Energy: " << energy << endl;
@@ -605,10 +670,12 @@ void mainMenu(string& account) {
                                 energy--;
 
                                 if (uans == ans) {
-                                    std::cout << "\nCorrect! You've Gained 10 Primogems" << endl;
+
+                                    int easyMathMultiplier = 10 * (gemMultiplier + companionMultiplier);
+                                    gems += easyMathMultiplier;
+                                    std::cout << "\nCorrect! You've Gained " << easyMathMultiplier << " Primogems" << endl;
                                     std::cout << "Current Energy: " << energy << endl;
-                                    gems+= 10;
-                                    //PRIMOGEMS + 10
+
                                 } else {
                                     std::cout << "\nIncorrect! The correct answer is " << ans << endl;
                                     std::cout << "Current Energy: " << energy << endl;
@@ -649,10 +716,12 @@ void mainMenu(string& account) {
                                 energy--;
 
                                 if (std::fabs(uans - ans) < 0.01) {
-                                    std::cout << "\nCorrect! You've Gained 10 Primogems" << endl;
+
+                                    int easyMathMultiplier = 10 * (gemMultiplier + companionMultiplier);
+                                    gems += easyMathMultiplier;
+                                    std::cout << "\nCorrect! You've Gained " << easyMathMultiplier << " Primogems" << endl;
                                     std::cout << "Current Energy: " << energy << endl;
-                                    gems+= 10;
-                                    //PRIMOGEMS + 10
+
                                 } else {
                                     std::cout << "\nIncorrect! The correct answer is " << ans << endl;
                                     std::cout << "Current Energy: " << energy << endl;
@@ -707,10 +776,12 @@ void mainMenu(string& account) {
                                 energy--;
 
                                 if (uans == x) {
-                                    std::cout << "\nCorrect! You've Gained 20 Primogems" << endl;
+
+                                    int mediumMathMultiplier = 20 * (gemMultiplier + companionMultiplier);
+                                    gems += mediumMathMultiplier;
+                                    std::cout << "\nCorrect! You've Gained " << mediumMathMultiplier << " Primogems" << endl;
                                     std::cout << "Current Energy: " << energy << endl;
-                                    gems+= 20;
-                                    //PRIMOGEMS + 20
+
                                 } else {
                                     std::cout << "\nIncorrect! The correct answer is " << x << endl;
                                     std::cout << "Current Energy: " << energy << endl;
@@ -751,10 +822,12 @@ void mainMenu(string& account) {
                                 energy--;
 
                                 if (uans == ans) {
-                                    std::cout << "\nCorrect! You've Gained 20 Primogems" << endl;
+
+                                    int mediumMathMultiplier = 20 * (gemMultiplier + companionMultiplier);
+                                    gems += mediumMathMultiplier;
+                                    std::cout << "\nCorrect! You've Gained " << mediumMathMultiplier << " Primogems" << endl;
                                     std::cout << "Current Energy: " << energy << endl;
-                                    gems+= 20;
-                                    //PRIMOGEMS + 20
+
                                 } else {
                                     std::cout << "\nIncorrect! The correct answer is " << ans << endl;
                                     std::cout << "Current Energy: " << energy << endl;
@@ -807,10 +880,11 @@ void mainMenu(string& account) {
                                 energy--;
 
                                 if (fabs(uans - c) < 0.01) {
-                                    std::cout << "\nCorrect! You've Gained 30 Primogems" << endl;
+
+                                    int hardMathMultiplier = 30 * (gemMultiplier + companionMultiplier);
+                                    gems += hardMathMultiplier;
+                                    std::cout << "\nCorrect! You've Gained " << hardMathMultiplier << " Primogems" << endl;
                                     std::cout << "Current Energy: " << energy << endl;
-                                    gems+= 30;
-                                    //PRIMOGEMS + 30
 
                                 } else {
                                     std::cout << "\nIncorrect! The correct answer is " << c << endl;
@@ -850,10 +924,12 @@ void mainMenu(string& account) {
                                 energy--;
 
                                 if (uans == ans) {
-                                    std::cout << "\nCorrect! You've Gained 30 Primogems" << endl;
+
+                                    int hardMathMultiplier = 30 * (gemMultiplier + companionMultiplier);
+                                    gems += hardMathMultiplier;
+                                    std::cout << "\nCorrect! You've Gained " << hardMathMultiplier << " Primogems" << endl;
                                     std::cout << "Current Energy: " << energy << endl;
-                                    gems+= 30;
-                                    //PRIMOGEMS + 30
+
                                 } else {
                                     std::cout << "\nIncorrect! The correct answer is " << ans << endl;
                                     std::cout << "Current Energy: " << energy << endl;
@@ -952,7 +1028,7 @@ void mainMenu(string& account) {
                                 std::cout << "\n";
                                 alive = false;
                             } else {
-                                earnedGems += 10;
+                                earnedGems += int(10 * (gemMultiplier + companionMultiplier));
                                 wave++;
                                 system("cls");
                             }
@@ -990,7 +1066,7 @@ void mainMenu(string& account) {
             escKey();
 
             std::cout << "====== Menu ======";
-            std::cout << "\n1. Wish\n2. Wish History\n3. Companion List\n4. Back\n";
+            std::cout << "\n1. Wish\n2. Companion List\n3. Back\n";
             std::cout << "\nEnter choice (1-4): ";
             cin >> choice;
             if (choice == 1){
@@ -1002,7 +1078,14 @@ void mainMenu(string& account) {
                 do {
                     std::cout << "\nYou have " << gems << " Primo Gems and " << tickets << " Ticket(s).\n";
                     std::cout << "How many wishes do you want to make? ";
-                    cin >> num_pulls;
+
+                    if (!(cin >> num_pulls)) {
+                        cin.clear();
+                        cin.ignore(10000, '\n');
+                        std::cout << "Invalid input! Please enter a NUMBER only.\n";
+                        system("cls");
+                        continue;
+                    }
 
                     //input validation
                     if (num_pulls <= 0) {
@@ -1010,44 +1093,52 @@ void mainMenu(string& account) {
                         system("cls");
                         continue;
                     }
-                    if (cin.fail()) {
-                        cin.clear();
-                        cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                        std::cout << "Invalid input.\n";
-                        system("cls");
-                        continue;
+
+                    // Case 1: User has enough tickets
+                    int needed = num_pulls;
+
+                    if (tickets >= needed) {
+                        tickets -= needed;
+                        std::cout << "\nUsing " << needed << " Ticket(s)!\n";
                     }
 
+                    // Case 2: Not enough tickets → use tickets first, gems for the rest
+                    else {
+                        int useTickets = tickets;
+                        int wishCost = 160;
+                        if (vipActive) {wishCost = int(wishCost * 0.7);}
 
-                    //check if user has enough gems/tickets
-                    if (tickets >= num_pulls) {
-                        int total_cost = num_pulls * 160; //amount of gems used
-                        tickets -= num_pulls;
-                        gems -= total_cost;
-                        std::cout << "\nUsing " << num_pulls << " Ticket(s) for your wishes!\n";
-                    } else if (tickets < num_pulls) {
-                        std::cout << "\nNot enough tickets. Do you want to use Primo Gems for the remaining wishes? (Y/N): ";
-                        char gem_choice;
-                        cin >> gem_choice;
-                        gem_choice = toupper(gem_choice);
-                        if (gem_choice == 'Y') {
-                            std::cout << "\n\n";
-                            buyTickets(tickets, gems);
-                            std::cout << "\nYou have " << tickets << " Ticket(s) remaining.\n";
-                        } else {
+                        int needGems = (needed - useTickets) * wishCost;
+
+                        std::cout << "\nYou only have " << tickets << " ticket(s).\n";
+                        std::cout << "Remaining wishes require " << needGems << " Primo Gems.\n";
+                        std::cout << "Continue? (Y/N): ";
+
+                        char confirm;
+                        cin >> confirm;
+                        confirm = toupper(confirm);
+
+                        if (confirm != 'Y') {
                             std::cout << "Cancelling wish...\n";
-                            system("cls");
+                            break;
+                            escKey;
+                        }
+
+                        if (gems < needGems) {
+                            std::cout << "Not enough Primo Gems!\n";
                             continue;
                         }
-                    }
-                    else {
-                        std::cout << "Not enough Primo Gems or Tickets for " << num_pulls << " wishes.\n";
-                        system("cls");
-                        continue;
+
+                        // Deduct properly
+                        tickets = 0;
+                        gems -= needGems;
+
+                        std::cout << "\nUsing " << useTickets << " tickets and "
+                            << needGems << " Primo Gems to complete " << needed << " pulls.\n";
                     }
                     //perform the pulls
                     for (int i = 0; i < num_pulls; i++) {
-                        Companion pulled = wishCompanion(t1, pull_3star, pull_4star, pull_5star, pull_6star);
+                        Companion pulled = wishCompanion(t1, pull_3star, pull_4star, pull_5star, pull_6star, luckBoostActive);
                         
                         std::cout << "You pulled: " << pulled.name << " [" << pulled.star << "]\n";
 
@@ -1076,36 +1167,160 @@ void mainMenu(string& account) {
                     cin >> choice;
                     choice = toupper(choice);
                 } while (choice == 'Y');
-                
-            }
-            else if (choice == 2) {
-
+                system("cls");
             }
             
-            else if (choice == 3) {
+            else if (choice == 2) {
+                system("cls");
                 companionList();
             }
             
             escKey();
             break;
         }
-        case 3: //check inventory option
-            std::cout << "====== Inventory Section ======" << endl;
-            std::cout << "Inventory space: " << current_inventory << " / " << inventory << endl;
 
+        case 3: {
+            std::cout << "====== Inventory Section ======\n";
+            std::cout << "Inventory space: " << current_inventory << " / " << inventory << "\n";
+
+            // Show equipped companions
+            std::cout << "\n--- Equipped Companions (" << equippedList.size() << "/" << maxEquipSlots << ") ---\n";
+            if (equippedList.empty()) {
+                std::cout << "None\n";
+            } else {
+                for (size_t i = 0; i < equippedList.size(); i++) {
+                    std::cout << (i + 1) << ". " << equippedList[i].name 
+                            << " [" << equippedList[i].star << "]\n";
+                }
+            }
+
+            // Show unequipped inventory
+            std::cout << "\n--- Inventory ---\n";
             if (inventory_list.empty()) {
                 std::cout << "Your inventory is empty.\n";
+                escKey();
+                break;
             } else {
-                for (size_t i = 0; i < inventory_list.size(); ++i) {
-                    const Companion& comp = inventory_list[i];
-                    std::cout << (i + 1) << ". " << comp.name << " [" << comp.star << "]" << endl;
+                for (size_t i = 0; i < inventory_list.size(); i++) {
+                    std::cout << (i + 1) << ". " << inventory_list[i].name 
+                            << " [" << inventory_list[i].star << "]\n";
+                }
+            }
+
+            std::cout << "\nOptions:\n";
+            std::cout << "1. Equip a companion\n";
+            std::cout << "2. Delete a companion\n";
+            std::cout << "3. Unequip companion\n";
+            std::cout << "4. Back\n\n";
+
+            int choice;
+            cin >> choice;
+
+            // EQUIP
+            if (choice == 1) {
+                if (equippedList.size() >= maxEquipSlots) {
+                    std::cout << "You reached the max equip limit (" << maxEquipSlots << ")!\n";
+                    escKey();
+                    break;
+                }
+
+                int num;
+                std::cout << "Enter number to EQUIP: ";
+                cin >> num;
+
+                if (num < 1 || num > inventory_list.size()) {
+                    std::cout << "Invalid number.\n";
+                    escKey();
+                    break;
+                }
+
+                Companion selected = inventory_list[num - 1];
+                equippedList.push_back(selected);   // add to equipped
+                inventory_list.erase(inventory_list.begin() + (num - 1)); // remove from inventory
+                current_inventory--;
+
+                std::cout << "\nEquipped " << selected.name << "!\n";
+
+                // Recalc full multiplier
+                companionMultiplier = 1.0;
+                for (auto& c : equippedList) {
+                    if (c.star == "3 Star") companionMultiplier += 0.5;
+                    if (c.star == "4 Star") companionMultiplier += 2.0;
+                    if (c.star == "5 Star") companionMultiplier += 3.0;
+                    if (c.star == "6 Star") companionMultiplier += 5.0;
+                }
+
+                std::cout << "Total companion multiplier: x" << companionMultiplier << "\n";
+            }
+
+            // DELETE
+            else if (choice == 2) {
+                int num;
+                std::cout << "Enter number to DELETE: ";
+                cin >> num;
+
+                if (num < 1 || num > inventory_list.size()) {
+                    std::cout << "Invalid number.\n";
+                    escKey();
+                    break;
+                }
+
+                std::cout << "Delete " << inventory_list[num - 1].name << "? (Y/N): ";
+                char confirm;
+                cin >> confirm;
+
+                if (toupper(confirm) == 'Y') {
+                    inventory_list.erase(inventory_list.begin() + (num - 1));
+                    current_inventory--;
+                    std::cout << "Deleted.\n";
+                } else {
+                    std::cout << "Canceled.\n";
+                }
+            }
+
+            // UNEQUIP
+            else if (choice == 3) {
+                if (equippedList.empty()) {
+                    std::cout << "No companions equipped.\n";
+                    escKey();
+                    break;
+                }
+
+                int num;
+                std::cout << "Enter number to UNEQUIP: ";
+                cin >> num;
+
+                if (num < 1 || num > equippedList.size()) {
+                    std::cout << "Invalid number.\n";
+                    escKey();
+                    break;
+                }
+
+                Companion removed = equippedList[num - 1];
+                equippedList.erase(equippedList.begin() + (num - 1));
+
+                inventory_list.push_back(removed);
+                current_inventory++;
+
+                std::cout << "Unequipped " << removed.name << ".\n";
+
+                // Recalculate multiplier
+                companionMultiplier = 1.0;
+                for (auto& c : equippedList) {
+                    if (c.star == "3 Star") companionMultiplier *= 1.5;
+                    if (c.star == "4 Star") companionMultiplier *= 2.0;
+                    if (c.star == "5 Star") companionMultiplier *= 3.0;
+                    if (c.star == "6 Star") companionMultiplier *= 5.0;
                 }
             }
 
             escKey();
             break;
+        }
+
+
         case 4: //shop option
-            shopItems(owned, price, gems, tickets);
+            shopItems(owned, price, gems, tickets, gemMultiplier, inventory, luckBoostActive, maxEquipSlots, vipActive);
             break;
         
         case 5: //profile option
