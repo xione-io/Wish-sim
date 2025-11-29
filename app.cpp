@@ -311,31 +311,30 @@ Companion wishCompanion(std::mt19937& t1, int& pity3, int& pity4, int& pity5, in
     int rate5 = 9980;
     int rate6 = 10000;
 
-    // APPLY LUCK BOOST (×2 ONLY TO 5★ AND 6★)
+    // luck boost logic (×2 only to 5 star and 6 star)
     if (luckBoost) {
-        // Expand 6★ from 0.20% to 0.40%
-        rate6 = 10000; // unchanged upper bound
-        rate5 = 9980 - (111); // remove original 5★ range
-        rate5 -= 111; // make space
 
-        rate5 += (111 * 2); // double 5★
-        // Rebuild range after 4★
-        rate6 = rate5 + (20 * 2); // double 6★
+        rate6 = 10000;
+        rate5 = 9980 - (111);
+        rate5 -= 111;
+
+        rate5 += (111 * 2);
+        rate6 = rate5 + (20 * 2);
     }
 
-    // RANDOM ROLL
+    // random roll
     std::uniform_int_distribution<int> dist(1, 10000);
     int roll = dist(t1);
 
-    // ORIGINAL GUARANTEED PITY (DO NOT TOUCH!)
+    // pity without lucj boost
     if (pity6 >= 900)
-        roll = 9981; // guarantee 6★
+        roll = 9981; // guarantee 6 star
     else if (pity5 >= 162)
-        roll = 9870; // guarantee 5★
+        roll = 9870; // guarantee 5 star
     else if (pity4 >= 18)
-        roll = 8870; // guarantee 4★
+        roll = 8870; // guarantee 4 star
 
-    // DETERMINE RARITY BASED ON UPDATED RANGES
+    // RARITY BASED ON UPDATED RANGES
     std::string rarity;
 
     if (roll <= 8869)
@@ -359,7 +358,7 @@ Companion wishCompanion(std::mt19937& t1, int& pity3, int& pity4, int& pity5, in
     if (rarity == "5 Star") pity5 = 0;
     if (rarity == "6 Star") pity6 = 0;
 
-    // RETURN RANDOM COMPANION
+    // RANDOM COMPANION
     if (rarity == "3 Star") return companions[0 + rand() % 8];
     if (rarity == "4 Star") return companions[8 + rand() % 8];
     if (rarity == "5 Star") return companions[16 + rand() % 5];
@@ -801,6 +800,8 @@ void mainMenu(string& account) {
                                 break;
                             }
 
+                            // EVALUATE
+
                             else if (type == 1) {
                                 x = rand() % 9 + 1;
                                 y = rand() % 9 + 1;
@@ -860,6 +861,8 @@ void mainMenu(string& account) {
                             std::cout << "\n       HARD MODE";
                             std::cout << "\n========================";
 
+                            // FINDING HYPOTENUSE OF A TRIANGLE
+
                             if (type == 0) {
                                 int a = rand() % 20 + 5;
                                 int b = rand() % 20 + 5;
@@ -904,6 +907,8 @@ void mainMenu(string& account) {
                                 }
                                 break;
                             }
+
+                            // SOLVING EXPONENT
 
                             else if (type == 1) {
                                 int base = rand() % 5 + 2;
@@ -1307,10 +1312,10 @@ void mainMenu(string& account) {
                 // Recalculate multiplier
                 companionMultiplier = 1.0;
                 for (auto& c : equippedList) {
-                    if (c.star == "3 Star") companionMultiplier *= 1.5;
-                    if (c.star == "4 Star") companionMultiplier *= 2.0;
-                    if (c.star == "5 Star") companionMultiplier *= 3.0;
-                    if (c.star == "6 Star") companionMultiplier *= 5.0;
+                    if (c.star == "3 Star") companionMultiplier += 0.5;
+                    if (c.star == "4 Star") companionMultiplier += 2.0;
+                    if (c.star == "5 Star") companionMultiplier += 3.0;
+                    if (c.star == "6 Star") companionMultiplier += 5.0;
                 }
             }
 
